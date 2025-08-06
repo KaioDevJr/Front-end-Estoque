@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import api from "../../api/api";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext.jsx";
+import { firebaseUserToken } from "../../firebase/auth.js";
 
 const nomeValid = {
     required: {
@@ -44,70 +45,46 @@ const precoValid = {
 
 export default function Products() {
     const [produtos, setProdutos] = useState([]);
-    const [isLoading, setIsLoading] = useState(false);
-    const [updateTrigger, setUpdateTrigger] = useState(0);
-    const { register, handleSubmit, reset, formState: { errors } } = useForm();
-    const { isAuthenticated } = useAuth();
+    const [saving, setSaving] = useState(false);
+    const { register, handleSubmit, reset, formState: { errors } } = useForm();    
+    const { isAuthenticated} = useAuth();
     const navigate = useNavigate();
 
 
     
     async function onSubmit(dados) {
-        setIsLoading(true);
+        setSaving(true);
         try {
-            // 1. Cadastra o novo produto no backend.
-            await api.post("/produtos", dados);
-
-            // 2. Aciona o gatilho para que o useEffect busque os produtos novamente.
-            setUpdateTrigger(currentValue => currentValue + 1);
+            const token = await firebaseUserToken();
+            await api.post("/produtos", dados, {
+                headers: { Authorization: token }
+            });
             reset();
-            // window.alert("Produto cadastrado com sucesso!");
+            buscarProdutos();
         } catch (error) {
-            window.alert("Erro ao cadastrar produto. Tente novamente.");
-            // Log detalhado do erro para facilitar a depuração
-            if (error.response) {
-                // O servidor respondeu com um status de erro (4xx, 5xx)
-                console.error("Erro de resposta da API:", error.response.data);
-                console.error("Status do erro:", error.response.status);
-                console.error("Cabeçalhos:", error.response.headers);
-            } else if (error.request) {
-                // A requisição foi feita mas não houve resposta
-                console.error("A requisição foi enviada, mas sem resposta do servidor:", error.request);
-            } else {
-                // Algo aconteceu ao configurar a requisição
-                console.error("Erro ao configurar a requisição:", error.message);
-            }
-            console.error("Configuração da requisição que falhou:", error.config);
-        } finally {
-            setIsLoading(false);
+            window.alert("Houve um erro.");
+            console.error(error);
         }
+        setSaving(false);
     }
+            
 
     async function buscarProdutos() {
-        try {
-            const response = await api.get("/produtos");
-            setProdutos(response.data);
-        } catch (error) {
-            console.error("Erro ao buscar produtos:", error);
-        }
+      const token = await firebaseUserToken();
+        const response = await api.get("/produtos", {
+            headers: { Authorization: token }
+        });
+        const produtos = response.data;
+        setProdutos(produtos);
     }
-    useEffect(() => {
+     useEffect(() => {
         buscarProdutos();
-        // O useEffect é acionado sempre que o updateTrigger muda,
-    }, [updateTrigger]);
-
-    useEffect(() => {
-        // Este é o local correto para executar efeitos colaterais como a navegação.
-        // Se o usuário não estiver autenticado, ele será redirecionado para o login.
-        if (!isAuthenticated) {
-            navigate("/login");
-        }
-    }, [isAuthenticated, navigate]);
+    }, []);
 
     if (!isAuthenticated) {
-        // Enquanto a navegação ocorre, retornamos null para não renderizar o resto do componente.
-        return null;
+        navigate("/login");
     }
+
 
     return (
         <>
@@ -142,12 +119,7 @@ export default function Products() {
                             </Form.Control.Feedback>
                         </Form.Group>
                     </Row>
-                    <Button type="submit" disabled={isLoading}>
-                        {isLoading ? (
-                            <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" />
-                        ) : (
-                            "Cadastrar"
-                        )}
+                    <Button type="submit" disabled={saving}>{saving ? "Cadastrando..." : "Cadastrar"}
                     </Button>
                 </Form>
             </Container>

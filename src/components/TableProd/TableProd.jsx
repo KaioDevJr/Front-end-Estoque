@@ -14,8 +14,8 @@ export default function TableProd({ produtos }) {
             <tbody>
                 {produtos.map((produto) => (
                     // Corrigido para usar `produto._id`, que é o nome do campo que vem do banco de dados.
-                    <tr key={produto._id}>
-                        <td>{produto._id}</td>
+                    <tr key={produto.id}>
+                        <td>{produto.id}</td>
                         <td>{produto.nome}</td>
                         <td>{produto.quantidade}</td>
                         <td>R$ {(produto.preco ?? 0).toFixed(2)}</td>

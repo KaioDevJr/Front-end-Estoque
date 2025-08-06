@@ -1,23 +1,21 @@
-import {getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut} from "firebase/auth";
-import app from "./app.js";
-import firebase from "firebase/compat/app";
+import {getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onIdTokenChanged} from "firebase/auth";
+import app from "./app";
 
 const auth = getAuth(app);
 
 async function firebaseSignup(email, senha) {
-    return await createUserWithEmailAndPassword(auth, email, senha);
+    await createUserWithEmailAndPassword(auth, email, senha);
 }
 async function firebaseLogin(email, senha) {
-    return await signInWithEmailAndPassword(auth, email, senha);
+    await signInWithEmailAndPassword(auth, email, senha);
 }
 async function firebaseLogout() {
-    return await signOut(auth);
+    await signOut(auth);
 }
 
 function firebaseUser() {
     const user = auth.currentUser;
-   return user;
-    
+    return user;
 }
 
 async function firebaseUserToken() {
@@ -27,10 +25,10 @@ async function firebaseUserToken() {
 
 }
 
-// function firebaseUserId() {
-//     const user = auth.currentUser;
-//     return user.uid;
-// }
+function firebaseObserveUser(handleChange){
+    return onIdTokenChanged(auth, (user) => {
+        handleChange(user);
+    });
+}
 
-
-export {firebaseSignup, firebaseLogin, firebaseLogout, firebaseUser, firebaseUserToken};
+export {firebaseSignup, firebaseLogin, firebaseLogout, firebaseUser, firebaseUserToken, firebaseObserveUser};
